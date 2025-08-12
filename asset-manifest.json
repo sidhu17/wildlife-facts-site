@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/wildlife-facts-site/static/css/main.90004bbb.css",
-    "main.js": "/wildlife-facts-site/static/js/main.636a848b.js",
+    "main.js": "/wildlife-facts-site/static/js/main.ee7f0f3d.js",
     "index.html": "/wildlife-facts-site/index.html",
     "main.90004bbb.css.map": "/wildlife-facts-site/static/css/main.90004bbb.css.map",
-    "main.636a848b.js.map": "/wildlife-facts-site/static/js/main.636a848b.js.map"
+    "main.ee7f0f3d.js.map": "/wildlife-facts-site/static/js/main.ee7f0f3d.js.map"
   },
   "entrypoints": [
     "static/css/main.90004bbb.css",
-    "static/js/main.636a848b.js"
+    "static/js/main.ee7f0f3d.js"
   ]
 }
