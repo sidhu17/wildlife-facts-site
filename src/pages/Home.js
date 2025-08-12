@@ -12,7 +12,6 @@ import "../components/Spinner.css";
 
 const categories = ["Mammal", "Bird", "Insect", "Sea", "Reptile", "Amphibian"];
 
-// Helper to ensure FactCard always gets safe values
 function sanitizeAnimal(animal, fallbackId = "animal") {
   return {
     id: animal?.id || `${fallbackId}-${Math.random().toString(36).slice(2)}`,
@@ -61,7 +60,6 @@ export default function Home() {
     setLoading(true);
     try {
       const wikiResults = await searchSpecies(q);
-
       if (wikiResults && wikiResults.length > 0) {
         const mapped = wikiResults.map((w, i) =>
           sanitizeAnimal(
@@ -113,21 +111,6 @@ export default function Home() {
 
   return (
     <>
-      {/* Overlay spinner */}
-      {loading && (
-        <div className="spinner-overlay" role="status" aria-live="polite">
-          <div className="panel">
-            <Spinner size={28} inline={false} />
-            <div>
-              <div style={{ fontWeight: 600 }}>Loading</div>
-              <div className="small-muted" style={{ fontSize: 13 }}>
-                Fetching data — this may take a second
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="page-title">Discover wildlife facts</div>
 
       <div className="controls">
