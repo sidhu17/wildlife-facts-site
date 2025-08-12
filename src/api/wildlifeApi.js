@@ -4,7 +4,7 @@ import localData from "../data/animals.json";
 
 /**
  * Strategy:
- * - Primary: zoo-animal-api for random animals
+ * - Primary: zoo-animal-api for random animals (only if not blocked by CORS)
  * - Secondary: Wikimedia/Wikipedia API to find a page thumbnail for the species name
  * - Fallback: localData
  */
@@ -47,8 +47,7 @@ async function getWikiThumbnail(title) {
       }
     }
     return "";
-  } catch (err) {
-    // console.warn("Wikimedia thumbnail fetch failed", err);
+  } catch {
     return "";
   }
 }
@@ -57,11 +56,13 @@ async function getWikiThumbnail(title) {
 async function ensureImage(animal) {
   if (!animal) return animal;
   if (animal.image) return animal; // already has image
+
   // try wikimedia by name
   const thumb = await getWikiThumbnail(animal.name);
   if (thumb) {
     return { ...animal, image: thumb };
   }
+
   // also try common_names if available
   if (animal.common_names && animal.common_names.length > 0) {
     for (const name of animal.common_names) {
@@ -74,22 +75,29 @@ async function ensureImage(animal) {
 
 /** Public functions */
 export async function getRandomFact() {
-  // 1) try zoo-animal-api
-  try {
-    const res = await axios.get("https://zoo-animal-api.herokuapp.com/animals/rand");
-    if (res && res.data) {
-      let animal = mapZooApi(res.data);
-      // if image missing, try wiki
-      animal = await ensureImage(animal);
-      return animal;
+  const isGithubPages = window.location.hostname.endsWith("github.io");
+
+  // 1) Try zoo-animal-api only if not on GitHub Pages
+  if (!isGithubPages) {
+    try {
+      const res = await axios.get("https://zoo-animal-api.herokuapp.com/animals/rand", {
+        timeout: 5000,
+      });
+      if (res && res.data) {
+        let animal = mapZooApi(res.data);
+        animal = await ensureImage(animal);
+        return animal;
+      }
+    } catch (e) {
+      console.warn("Zoo Animal API failed, falling back to local data:", e.message);
     }
-  } catch (e) {
-    // ignore and fallback to local
+  } else {
+    console.warn("Skipping Zoo Animal API call — blocked by CORS on GitHub Pages");
   }
 
-  // 2) fallback: random from local
+  // 2) Fallback: random from local
   const idx = Math.floor(Math.random() * localData.length);
-  const animal = localData[idx];
+  let animal = localData[idx];
   return await ensureImage(animal);
 }
 
@@ -101,7 +109,7 @@ export async function searchByName(q) {
       (a.common_names && a.common_names.join(" ").toLowerCase().includes(ql))
   );
 
-  // attempt to attach wiki thumbnails to any results missing image (do this in parallel)
+  // attempt to attach wiki thumbnails to any results missing image
   const enhanced = await Promise.all(
     results.map(async (r) => {
       if (!r.image) return ensureImage(r);
@@ -113,7 +121,9 @@ export async function searchByName(q) {
 }
 
 export async function getRandomByCategory(category) {
-  const filtered = localData.filter((a) => (a.category || "").toLowerCase() === (category || "").toLowerCase());
+  const filtered = localData.filter(
+    (a) => (a.category || "").toLowerCase() === (category || "").toLowerCase()
+  );
   if (filtered.length === 0) {
     return getRandomFact();
   }
