@@ -1,0 +1,80 @@
+/* Simple modern styles */
+:root{
+  --bg: #f6fbf8;
+  --card: #ffffff;
+  --muted: #6b6b6b;
+  --accent: #2e8b57;
+}
+
+body, html, #root {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #eef9f3 0%, var(--bg) 100%);
+  color: #111;
+}
+
+.App {
+  min-height: 100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+main{
+  flex:1;
+  max-width:1100px;
+  margin: 24px auto;
+  width: calc(100% - 48px);
+}
+
+.footer{
+  text-align:center;
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 14px;
+  border-top: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Buttons */
+.btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn:active { transform: translateY(1px); }
+
+/* layout */
+.controls {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+  align-items:center;
+}
+
+/* responsive grid for cards */
+.cards {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* small input */
+.input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.08);
+  min-width:200px;
+}
+
+/* headings */
+.page-title{
+  font-size:20px;
+  margin: 8px 0 14px;
+}
+
+.small-muted { color: var(--muted); font-size:13px; }

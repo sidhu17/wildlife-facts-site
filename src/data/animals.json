@@ -1,0 +1,98 @@
+[
+  {
+    "id": "a1",
+    "name": "African Elephant",
+    "common_names": ["elephant"],
+    "category": "Mammal",
+    "habitat": "Savannahs, forests",
+    "diet": "Herbivore",
+    "lifespan": "60-70",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/3/37/African_Bush_Elephant.jpg",
+    "fact": "The African elephant is the largest land animal. Their trunks have over 40,000 muscles.",
+    "danger": "Generally peaceful, but protective mothers can be aggressive."
+  },
+  {
+    "id": "a2",
+    "name": "Peregrine Falcon",
+    "common_names": ["peregrine"],
+    "category": "Bird",
+    "habitat": "Mountains, coasts, cities",
+    "diet": "Carnivore (birds)",
+    "lifespan": "13-20",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/17/Falco_peregrinus_good_-_Christopher_Watson.jpg",
+    "fact": "Peregrine falcons are the fastest birds, reaching over 200 mph during dives.",
+    "danger": "Powerful predators of other birds."
+  },
+  {
+    "id": "a3",
+    "name": "Blue Whale",
+    "common_names": ["blue whale"],
+    "category": "Sea",
+    "habitat": "Open oceans",
+    "diet": "Krill (filter feeder)",
+    "lifespan": "80-90",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/52/Balaenoptera_musculus_1.jpg",
+    "fact": "The blue whale is the largest animal known to have ever existed.",
+    "danger": "No direct danger to humans but massive size."
+  },
+  {
+    "id": "a4",
+    "name": "Monarch Butterfly",
+    "common_names": ["monarch"],
+    "category": "Insect",
+    "habitat": "Meadows, fields",
+    "diet": "Nectar",
+    "lifespan": "0.5-1 (months)",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/4/41/Danaus_plexippus_Monarch_Butterfly.jpg",
+    "fact": "Monarchs migrate thousands of miles between North America and Mexico.",
+    "danger": "Non-threatening; indicator species for ecosystem health."
+  },
+  {
+    "id": "a5",
+    "name": "Green Sea Turtle",
+    "common_names": ["green turtle"],
+    "category": "Sea",
+    "habitat": "Coastal waters, beaches",
+    "diet": "Herbivore (seagrass), omnivore when young",
+    "lifespan": "70-80",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Green_turtle_swimming.jpg",
+    "fact": "They return to the same beaches where they were born to lay eggs.",
+    "danger": "Protected — disturbing nesting sites harms populations."
+  },
+  {
+    "id": "a6",
+    "name": "King Cobra",
+    "common_names": ["king cobra"],
+    "category": "Reptile",
+    "habitat": "Forests, bamboo stands",
+    "diet": "Carnivore (other snakes)",
+    "lifespan": "20",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/2/2b/King_Cobra.jpg",
+    "fact": "King cobras can 'stand up' and look a human in the eye — they are the longest venomous snake.",
+    "danger": "Highly venomous — dangerous if provoked."
+  },
+  {
+    "id": "a7",
+    "name": "Poison Dart Frog",
+    "common_names": ["dart frog"],
+    "category": "Amphibian",
+    "habitat": "Tropical rainforests",
+    "diet": "Insects",
+    "lifespan": "4-8",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Dendrobates_tinctorius_01.jpg",
+    "fact": "Their bright colors warn predators of their toxicity.",
+    "danger": "Highly toxic in the wild — do not handle."
+  },
+  {
+    "id": "a8",
+    "name": "Giant Anteater",
+    "common_names": ["anteater"],
+    "category": "Mammal",
+    "habitat": "Grasslands, forests",
+    "diet": "Ants and termites",
+    "lifespan": "14",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/4/41/Myrmecophaga_tridactyla_-_Cincinnati_Zoo.jpg",
+    "fact": "Anteaters use their long sticky tongues to eat up to 30,000 insects a day.",
+    "danger": "Can be aggressive if cornered; sharp claws."
+  }
+]

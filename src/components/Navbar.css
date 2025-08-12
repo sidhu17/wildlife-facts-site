@@ -1,0 +1,21 @@
+.navbar{
+  background: linear-gradient(90deg, #48a06a, #2e8b57);
+  color: #fff;
+  padding: 12px 0;
+  box-shadow: 0 2px 10px rgba(46,139,87,0.08);
+}
+.nav-inner{
+  max-width:1100px;
+  margin:0 auto;
+  padding:0 24px;
+}
+.brand{
+  margin:0;
+  font-size:20px;
+  letter-spacing:0.4px;
+}
+.nav-sub{
+  font-size:12px;
+  opacity:0.95;
+  margin-top:4px;
+}
