@@ -2,11 +2,9 @@
 import React, { useState, useEffect } from "react";
 import "./FactCard.css";
 
-/**
- * FactCard shows animal image + info.
- * It uses an onError fallback to a placeholder SVG (so images don't appear broken).
- */
 export default function FactCard({ animal }) {
+  if (!animal) return null;
+
   const placeholderSVG = encodeURIComponent(
     `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450' viewBox='0 0 800 450'>
       <rect width='100%' height='100%' fill='#f6fbf8'/>
@@ -18,30 +16,21 @@ export default function FactCard({ animal }) {
   const [imgSrc, setImgSrc] = useState(placeholderDataUrl);
 
   useEffect(() => {
-    // Use the provided image if available, otherwise placeholder.
     if (animal && animal.image) {
       setImgSrc(animal.image);
     } else {
       setImgSrc(placeholderDataUrl);
     }
-  }, [animal]); // update when animal changes
+  }, [animal]);
 
   function handleImageError() {
-    // If remote image fails, use placeholder
     setImgSrc(placeholderDataUrl);
   }
-
-  if (!animal) return null;
 
   return (
     <article className="fact-card">
       <div className="image-wrap">
-        <img
-          src={imgSrc}
-          alt={animal.name || "Animal"}
-          onError={handleImageError}
-          loading="lazy"
-        />
+        <img src={imgSrc} alt={animal.name || "animal"} onError={handleImageError} loading="lazy" />
       </div>
 
       <div className="info">
@@ -58,6 +47,9 @@ export default function FactCard({ animal }) {
           {animal.diet && <li><strong>Diet:</strong> {animal.diet}</li>}
           {animal.lifespan && <li><strong>Lifespan:</strong> {animal.lifespan} years</li>}
           {animal.danger && <li><strong>Danger:</strong> {animal.danger}</li>}
+          {animal.sourceUrl && (
+            <li><strong>Source:</strong> <a href={animal.sourceUrl} target="_blank" rel="noreferrer">Wikipedia</a></li>
+          )}
         </ul>
       </div>
     </article>
