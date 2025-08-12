@@ -1,0 +1,41 @@
+/* src/components/Spinner.css */
+.spinner {
+  border: 3px solid rgba(0,0,0,0.08);
+  border-top: 3px solid var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+  box-sizing: border-box;
+}
+
+.spinner.inline {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* overlay spinner container (used by Home.js) */
+.spinner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16,16,16,0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: auto; /* allow clicks to pass if you want, change if you want blocking */
+}
+
+.spinner-overlay .panel {
+  background: rgba(255,255,255,0.98);
+  padding: 18px 22px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  pointer-events: auto; /* allow hover text selection */
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -1,6 +1,10 @@
+// src/pages/Home.js
 import React, { useEffect, useState } from "react";
 import { getRandomFact, searchByName, getRandomByCategory } from "../api/wildlifeApi";
+import { searchSpecies } from "../api/wiki";
 import FactCard from "../components/FactCard";
+import Spinner from "../components/Spinner";
+import "../components/Spinner.css";
 
 const categories = ["Mammal", "Bird", "Insect", "Sea", "Reptile", "Amphibian"];
 
@@ -12,7 +16,6 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("");
 
   useEffect(() => {
-    // initial random fact
     fetchRandom();
   }, []);
 
@@ -31,14 +34,41 @@ export default function Home() {
 
   async function onSearch(e) {
     e.preventDefault();
-    if (!query.trim()) return;
+    const q = query.trim();
+    if (!q) return;
     setLoading(true);
+
     try {
-      const res = await searchByName(query.trim());
-      setResults(res);
-      if (res.length > 0) setCurrent(res[0]);
+      // 1) Try Wikipedia/Wikimedia live search
+      const wikiResults = await searchSpecies(q);
+      if (wikiResults && wikiResults.length > 0) {
+        // convert wiki result shape to our FactCard-friendly shape
+        const mapped = wikiResults.map((w) => ({
+          id: w.id,
+          name: w.name,
+          fact: w.description,
+          image: w.image,
+          category: "",
+          habitat: "",
+          diet: "",
+          lifespan: "",
+          danger: "",
+          sourceUrl: w.sourceUrl,
+        }));
+        setResults(mapped);
+        setCurrent(mapped[0]);
+      } else {
+        // 2) fallback to local dataset search
+        const local = await searchByName(q);
+        setResults(local);
+        if (local.length > 0) setCurrent(local[0]);
+      }
     } catch (err) {
       console.error(err);
+      // fallback to local
+      const local = await searchByName(q);
+      setResults(local);
+      if (local.length > 0) setCurrent(local[0]);
     } finally {
       setLoading(false);
     }
@@ -60,6 +90,21 @@ export default function Home() {
 
   return (
     <>
+      {/* Overlay spinner */}
+      {loading && (
+        <div className="spinner-overlay" role="status" aria-live="polite">
+          <div className="panel">
+            <Spinner size={28} inline={false} />
+            <div>
+              <div style={{ fontWeight: 600 }}>Loading</div>
+              <div className="small-muted" style={{ fontSize: 13 }}>
+                Fetching data — this may take a second
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-title">Discover wildlife facts</div>
 
       <div className="controls">
@@ -70,20 +115,44 @@ export default function Home() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button className="btn" type="submit">Search</button>
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? (
+              <>
+                <Spinner size={14} /> Searching...
+              </>
+            ) : (
+              "Search"
+            )}
+          </button>
         </form>
 
         <button className="btn" onClick={fetchRandom} disabled={loading}>
-          {loading ? "Loading..." : "Random fact"}
+          {loading ? (
+            <>
+              <Spinner size={14} /> Loading...
+            </>
+          ) : (
+            "Random fact"
+          )}
         </button>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            marginLeft: "auto",
+          }}
+        >
           <span className="small-muted">Random by category:</span>
           {categories.map((c) => (
             <button
               key={c}
               className="btn"
-              style={{ opacity: selectedCategory === c ? 1 : 0.9, padding: "8px 10px" }}
+              style={{
+                opacity: selectedCategory === c ? 1 : 0.9,
+                padding: "8px 10px",
+              }}
               onClick={() => onRandomCategory(c)}
             >
               {c}
@@ -93,7 +162,8 @@ export default function Home() {
       </div>
 
       <div style={{ marginBottom: 10 }} className="small-muted">
-        Tip: try search or click a category to get an instant random animal from that group.
+        Tip: try search or click a category to get an instant random animal from
+        that group.
       </div>
 
       <div className="cards">
