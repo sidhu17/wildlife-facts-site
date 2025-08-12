@@ -1,31 +1,12 @@
 // src/pages/Home.js
 import React, { useEffect, useState } from "react";
-import {
-  getRandomFact,
-  searchByName,
-  getRandomByCategory,
-} from "../api/wildlifeApi";
+import { getRandomFact, searchByName, getRandomByCategory } from "../api/wildlifeApi";
 import { searchSpecies } from "../api/wiki";
 import FactCard from "../components/FactCard";
 import Spinner from "../components/Spinner";
 import "../components/Spinner.css";
 
 const categories = ["Mammal", "Bird", "Insect", "Sea", "Reptile", "Amphibian"];
-
-function sanitizeAnimal(animal, fallbackId = "animal") {
-  return {
-    id: animal?.id || `${fallbackId}-${Math.random().toString(36).slice(2)}`,
-    name: animal?.name || "Unknown Animal",
-    fact: animal?.fact || "No fact available",
-    image: animal?.image || "/placeholder.jpg",
-    category: animal?.category || "Unknown",
-    habitat: animal?.habitat || "Unknown",
-    diet: animal?.diet || "Unknown",
-    lifespan: animal?.lifespan || "Unknown",
-    danger: animal?.danger || "Unknown",
-    sourceUrl: animal?.sourceUrl || "",
-  };
-}
 
 export default function Home() {
   const [current, setCurrent] = useState(null);
@@ -45,8 +26,7 @@ export default function Home() {
       setCurrent(animal);
       setResults([]);
     } catch (e) {
-      console.error("Error fetching random fact:", e);
-      setCurrent(null);
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -56,37 +36,33 @@ export default function Home() {
     e.preventDefault();
     const q = query.trim();
     if (!q) return;
-
     setLoading(true);
+
     try {
       const wikiResults = await searchSpecies(q);
       if (wikiResults && wikiResults.length > 0) {
-        const mapped = wikiResults.map((w, i) =>
-          sanitizeAnimal(
-            {
-              id: w.id,
-              name: w.name,
-              fact: w.description,
-              image: w.image,
-              sourceUrl: w.sourceUrl,
-            },
-            `wiki-${i}`
-          )
-        );
+        const mapped = wikiResults.map((w) => ({
+          id: w.id,
+          name: w.name,
+          fact: w.description,
+          image: w.image,
+          category: "",
+          habitat: "",
+          diet: "",
+          lifespan: "",
+          danger: "",
+          sourceUrl: w.sourceUrl,
+        }));
         setResults(mapped);
         setCurrent(mapped[0]);
       } else {
-        const local = (await searchByName(q)).map((r, i) =>
-          sanitizeAnimal(r, `local-${i}`)
-        );
+        const local = await searchByName(q);
         setResults(local);
         if (local.length > 0) setCurrent(local[0]);
       }
     } catch (err) {
-      console.error("Search error:", err);
-      const local = (await searchByName(q)).map((r, i) =>
-        sanitizeAnimal(r, `local-${i}`)
-      );
+      console.error(err);
+      const local = await searchByName(q);
       setResults(local);
       if (local.length > 0) setCurrent(local[0]);
     } finally {
@@ -102,8 +78,7 @@ export default function Home() {
       setCurrent(animal);
       setResults([]);
     } catch (err) {
-      console.error(`Error fetching category ${cat}:`, err);
-      setCurrent(null);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -174,11 +149,11 @@ export default function Home() {
       </div>
 
       <div className="cards">
-        {results.length > 0
-          ? results.filter(Boolean).map((r, i) => (
-              <FactCard key={r.id || i} animal={sanitizeAnimal(r, `res-${i}`)} />
-            ))
-          : current && <FactCard animal={sanitizeAnimal(current)} />}
+        {results.length > 0 ? (
+          results.map((r) => <FactCard key={r.id || r.name} animal={r} />)
+        ) : (
+          current && <FactCard animal={current} />
+        )}
       </div>
     </>
   );
