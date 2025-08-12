@@ -1,109 +1,183 @@
-// src/api/wildlifeApi.js
+// src/api/wiki.js
 import axios from "axios";
-import localData from "../data/animals.json";
-import { searchSpecies, getSpeciesByTitle } from "./wiki";
 
-/** Map zoo API fields to our internal shape */
-function mapZooApi(data) {
+const CACHE_KEY = "wiki_cache_v1";
+const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeCache(cache) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+
+async function wikiSearch(query, limit = 5) {
+  if (!query) return [];
+  const url = "https://en.wikipedia.org/w/api.php";
+  const params = {
+    action: "query",
+    list: "search",
+    srsearch: query,
+    format: "json",
+    origin: "*",
+    srlimit: limit,
+  };
+  const res = await axios.get(url, { params });
+  return res.data?.query?.search || [];
+}
+
+async function wikiGetPageInfo(title) {
+  if (!title) return null;
+  const cache = readCache();
+  const entry = cache[title];
+  const now = Date.now();
+
+  if (entry && entry.ts && now - entry.ts < TTL_MS) {
+    return entry.data;
+  }
+
+  try {
+    const url = "https://en.wikipedia.org/w/api.php";
+    const params = {
+      action: "query",
+      titles: title,
+      prop: "extracts|pageimages|pageterms",
+      exintro: true,
+      explaintext: true,
+      piprop: "thumbnail",
+      pithumbsize: 800,
+      format: "json",
+      origin: "*",
+    };
+    const res = await axios.get(url, { params });
+    const pages = res.data?.query?.pages || {};
+    const firstKey = Object.keys(pages)[0];
+    const page = pages[firstKey];
+    if (!page || page.missing) {
+      cache[title] = { ts: now, data: null };
+      writeCache(cache);
+      return null;
+    }
+
+    const data = {
+      pageid: page.pageid,
+      title: page.title || "Unknown Animal",
+      extract: page.extract || "No description available.",
+      thumbnail: page.thumbnail?.source || "",
+      terms: page.terms || {},
+      url: `https://en.wikipedia.org/?curid=${page.pageid}`,
+    };
+
+    cache[title] = { ts: now, data };
+    writeCache(cache);
+
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// Wikimedia Commons fallback
+async function fetchCommonsImage(query) {
+  try {
+    const commonsUrl = "https://commons.wikimedia.org/w/api.php";
+    const params = {
+      action: "query",
+      format: "json",
+      prop: "imageinfo",
+      generator: "search",
+      gsrsearch: query,
+      gsrlimit: 5,
+      iiprop: "url",
+      origin: "*",
+    };
+    const res = await axios.get(commonsUrl, { params });
+    const pages = res.data?.query?.pages || {};
+    for (const p of Object.values(pages)) {
+      const imgUrl = p.imageinfo?.[0]?.url || "";
+      if (
+        imgUrl &&
+        !imgUrl.toLowerCase().endsWith(".svg") &&
+        !imgUrl.toLowerCase().includes("locator_map")
+      ) {
+        return imgUrl;
+      }
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+// --- NEW: safety wrapper
+function normalizeWikiAnimal(w) {
+  if (!w) return null;
   return {
-    id: `zoo-${data.name}`,
-    name: data.name || data.latin_name || "Unknown",
-    category: data.animal_type || "Unknown",
-    habitat: data.habitat || "",
-    diet: data.diet || "",
-    lifespan: data.lifespan || "",
-    image: data.image_link || "",
-    fact: data.geo_range ? `${data.name} is found in ${data.geo_range}.` : "",
+    id: w.pageid || `${Date.now()}-${Math.random()}`,
+    name: w.title || "Unknown Animal",
+    fact: w.extract || "No fact available.",
+    image: w.thumbnail || "",
+    category: "",
+    habitat: "",
+    diet: "",
+    lifespan: "",
+    danger: "",
+    sourceUrl: w.url || ""
   };
 }
 
-/** Safe check for GitHub Pages */
-const isGithubPages =
-  typeof window !== "undefined" &&
-  window.location.hostname.endsWith("github.io");
+export async function searchSpecies(query) {
+  if (!query) return [];
+  const hits = await wikiSearch(query, 6);
+  if (!hits || hits.length === 0) return [];
 
-/** Fallback local random animal */
-function getLocalRandom() {
-  const idx = Math.floor(Math.random() * localData.length);
-  return localData[idx];
+  const titles = hits.map((h) => h.title);
+
+  const results = await Promise.all(
+    titles.map(async (title) => {
+      const [wikiInfo, commonsImg] = await Promise.all([
+        wikiGetPageInfo(title),
+        fetchCommonsImage(title),
+      ]);
+      if (!wikiInfo) return null;
+
+      let image = wikiInfo.thumbnail;
+      if (!image || image.toLowerCase().endsWith(".svg")) {
+        image = commonsImg || "";
+      }
+
+      return normalizeWikiAnimal({
+        ...wikiInfo,
+        thumbnail: image
+      });
+    })
+  );
+
+  return results.filter(Boolean);
 }
 
-/** Public functions */
-export async function getRandomFact() {
-  try {
-    // Option A: GitHub Pages → use Wikipedia for variety
-    if (isGithubPages) {
-      const wikiAnimals = await searchSpecies("animal");
-      if (wikiAnimals && wikiAnimals.length > 0) {
-        return wikiAnimals[Math.floor(Math.random() * wikiAnimals.length)];
-      }
-    }
+export async function getSpeciesByTitle(title) {
+  const [info, commonsImg] = await Promise.all([
+    wikiGetPageInfo(title),
+    fetchCommonsImage(title),
+  ]);
+  if (!info) return null;
 
-    // Option B: Use zoo-animal API
-    const res = await axios.get(
-      "https://zoo-animal-api.herokuapp.com/animals/rand"
-    );
-    if (res && res.data) {
-      let animal = mapZooApi(res.data);
-      if (!animal.image) {
-        const wikiAlt = await searchSpecies(animal.name);
-        if (wikiAlt && wikiAlt.length > 0) {
-          animal.image = wikiAlt[0].image;
-        }
-      }
-      return animal;
-    }
-  } catch (e) {
-    console.error("getRandomFact failed", e);
+  let image = info.thumbnail;
+  if (!image || image.toLowerCase().endsWith(".svg")) {
+    image = commonsImg || "";
   }
 
-  // Final fallback
-  return getLocalRandom();
-}
-
-export async function searchByName(q) {
-  if (!q) return [];
-  try {
-    const ql = q.toLowerCase();
-
-    // Try Wikipedia first
-    const wikiResults = await searchSpecies(q);
-    if (wikiResults && wikiResults.length > 0) return wikiResults;
-
-    // Fallback: local data search
-    const results = localData.filter(
-      (a) =>
-        a.name.toLowerCase().includes(ql) ||
-        (a.common_names &&
-          a.common_names.join(" ").toLowerCase().includes(ql))
-    );
-    return results;
-  } catch (e) {
-    console.error("searchByName failed", e);
-    return [];
-  }
-}
-
-export async function getRandomByCategory(category) {
-  try {
-    if (isGithubPages) {
-      const wikiAnimals = await searchSpecies(category || "animal");
-      if (wikiAnimals && wikiAnimals.length > 0) {
-        return wikiAnimals[Math.floor(Math.random() * wikiAnimals.length)];
-      }
-    }
-
-    const filtered = localData.filter(
-      (a) =>
-        (a.category || "").toLowerCase() ===
-        (category || "").toLowerCase()
-    );
-    if (filtered.length === 0) {
-      return getRandomFact();
-    }
-    return filtered[Math.floor(Math.random() * filtered.length)];
-  } catch (e) {
-    console.error("getRandomByCategory failed", e);
-    return getLocalRandom();
-  }
+  return normalizeWikiAnimal({
+    ...info,
+    thumbnail: image
+  });
 }

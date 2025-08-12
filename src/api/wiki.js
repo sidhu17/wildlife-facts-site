@@ -69,8 +69,8 @@ async function wikiGetPageInfo(title) {
 
     const data = {
       pageid: page.pageid,
-      title: page.title,
-      extract: page.extract || "",
+      title: page.title || "Unknown Animal",
+      extract: page.extract || "No description available.",
       thumbnail: page.thumbnail?.source || "",
       terms: page.terms || {},
       url: `https://en.wikipedia.org/?curid=${page.pageid}`,
@@ -117,6 +117,23 @@ async function fetchCommonsImage(query) {
   }
 }
 
+// --- NEW: safety wrapper
+function normalizeWikiAnimal(w) {
+  if (!w) return null;
+  return {
+    id: w.pageid || `${Date.now()}-${Math.random()}`,
+    name: w.title || "Unknown Animal",
+    fact: w.extract || "No fact available.",
+    image: w.thumbnail || "",
+    category: "",
+    habitat: "",
+    diet: "",
+    lifespan: "",
+    danger: "",
+    sourceUrl: w.url || ""
+  };
+}
+
 export async function searchSpecies(query) {
   if (!query) return [];
   const hits = await wikiSearch(query, 6);
@@ -124,14 +141,12 @@ export async function searchSpecies(query) {
 
   const titles = hits.map((h) => h.title);
 
-  // Fetch Wikipedia & Commons in parallel for each title
   const results = await Promise.all(
     titles.map(async (title) => {
       const [wikiInfo, commonsImg] = await Promise.all([
         wikiGetPageInfo(title),
         fetchCommonsImage(title),
       ]);
-
       if (!wikiInfo) return null;
 
       let image = wikiInfo.thumbnail;
@@ -139,13 +154,10 @@ export async function searchSpecies(query) {
         image = commonsImg || "";
       }
 
-      return {
-        id: wikiInfo.pageid,
-        name: wikiInfo.title,
-        description: wikiInfo.extract,
-        image,
-        sourceUrl: wikiInfo.url,
-      };
+      return normalizeWikiAnimal({
+        ...wikiInfo,
+        thumbnail: image
+      });
     })
   );
 
@@ -164,11 +176,8 @@ export async function getSpeciesByTitle(title) {
     image = commonsImg || "";
   }
 
-  return {
-    id: info.pageid,
-    name: info.title,
-    description: info.extract,
-    image,
-    sourceUrl: info.url,
-  };
+  return normalizeWikiAnimal({
+    ...info,
+    thumbnail: image
+  });
 }
