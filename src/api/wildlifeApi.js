@@ -1,11 +1,9 @@
 // src/api/wildlifeApi.js
 import axios from "axios";
 import localData from "../data/animals.json";
-import { searchSpecies } from "./wiki"; // <-- import from your wiki.js
+import { searchSpecies, getSpeciesByTitle } from "./wiki";
 
-/**
- * Map zoo API fields to our internal shape
- */
+/** Map zoo API fields to our internal shape */
 function mapZooApi(data) {
   return {
     id: `zoo-${data.name}`,
@@ -19,87 +17,93 @@ function mapZooApi(data) {
   };
 }
 
-/**
- * Ensure animal object has an image — try wiki if missing
- */
-async function ensureImage(animal) {
-  if (!animal) return animal;
-  if (animal.image) return animal;
-  const wikiResults = await searchSpecies(animal.name);
-  if (wikiResults.length > 0 && wikiResults[0].image) {
-    return { ...animal, image: wikiResults[0].image };
-  }
-  return animal;
+/** Safe check for GitHub Pages */
+const isGithubPages =
+  typeof window !== "undefined" &&
+  window.location.hostname.endsWith("github.io");
+
+/** Fallback local random animal */
+function getLocalRandom() {
+  const idx = Math.floor(Math.random() * localData.length);
+  return localData[idx];
 }
 
-/**
- * Get random animal fact
- * - Dev: Zoo API first
- * - GitHub Pages or CORS fail: Wikipedia
- * - Last fallback: local data
- */
+/** Public functions */
 export async function getRandomFact() {
-  const isGithubPages = window.location.hostname.endsWith("github.io");
-
-  // Primary: Zoo API (if not on GitHub Pages)
-  if (!isGithubPages) {
-    try {
-      const res = await axios.get(
-        "https://zoo-animal-api.herokuapp.com/animals/rand",
-        { timeout: 5000 }
-      );
-      if (res && res.data) {
-        let animal = mapZooApi(res.data);
-        animal = await ensureImage(animal);
-        return animal;
-      }
-    } catch (e) {
-      console.warn("Zoo API failed, falling back to Wikipedia:", e.message);
-    }
-  }
-
-  // Secondary: Wikipedia random search
   try {
-    // Get a truly random animal from Wikipedia search
-    const wikiAnimals = await searchSpecies("animal"); 
-    if (wikiAnimals.length > 0) {
-      return wikiAnimals[Math.floor(Math.random() * wikiAnimals.length)];
+    // Option A: GitHub Pages → use Wikipedia for variety
+    if (isGithubPages) {
+      const wikiAnimals = await searchSpecies("animal");
+      if (wikiAnimals && wikiAnimals.length > 0) {
+        return wikiAnimals[Math.floor(Math.random() * wikiAnimals.length)];
+      }
     }
-  } catch (err) {
-    console.warn("Wikipedia API failed:", err.message);
+
+    // Option B: Use zoo-animal API
+    const res = await axios.get(
+      "https://zoo-animal-api.herokuapp.com/animals/rand"
+    );
+    if (res && res.data) {
+      let animal = mapZooApi(res.data);
+      if (!animal.image) {
+        const wikiAlt = await searchSpecies(animal.name);
+        if (wikiAlt && wikiAlt.length > 0) {
+          animal.image = wikiAlt[0].image;
+        }
+      }
+      return animal;
+    }
+  } catch (e) {
+    console.error("getRandomFact failed", e);
   }
 
-  // Last fallback: local data
-  const idx = Math.floor(Math.random() * localData.length);
-  return await ensureImage(localData[idx]);
+  // Final fallback
+  return getLocalRandom();
 }
 
 export async function searchByName(q) {
-  const wikiResults = await searchSpecies(q);
-  if (wikiResults.length > 0) {
-    return wikiResults;
-  }
+  if (!q) return [];
+  try {
+    const ql = q.toLowerCase();
 
-  // fallback to local data search
-  const ql = q.toLowerCase();
-  const results = localData.filter(
-    (a) =>
-      a.name.toLowerCase().includes(ql) ||
-      (a.common_names &&
-        a.common_names.join(" ").toLowerCase().includes(ql))
-  );
-  return Promise.all(results.map(ensureImage));
+    // Try Wikipedia first
+    const wikiResults = await searchSpecies(q);
+    if (wikiResults && wikiResults.length > 0) return wikiResults;
+
+    // Fallback: local data search
+    const results = localData.filter(
+      (a) =>
+        a.name.toLowerCase().includes(ql) ||
+        (a.common_names &&
+          a.common_names.join(" ").toLowerCase().includes(ql))
+    );
+    return results;
+  } catch (e) {
+    console.error("searchByName failed", e);
+    return [];
+  }
 }
 
 export async function getRandomByCategory(category) {
-  const filtered = localData.filter(
-    (a) =>
-      (a.category || "").toLowerCase() ===
-      (category || "").toLowerCase()
-  );
-  if (filtered.length === 0) {
-    return getRandomFact();
+  try {
+    if (isGithubPages) {
+      const wikiAnimals = await searchSpecies(category || "animal");
+      if (wikiAnimals && wikiAnimals.length > 0) {
+        return wikiAnimals[Math.floor(Math.random() * wikiAnimals.length)];
+      }
+    }
+
+    const filtered = localData.filter(
+      (a) =>
+        (a.category || "").toLowerCase() ===
+        (category || "").toLowerCase()
+    );
+    if (filtered.length === 0) {
+      return getRandomFact();
+    }
+    return filtered[Math.floor(Math.random() * filtered.length)];
+  } catch (e) {
+    console.error("getRandomByCategory failed", e);
+    return getLocalRandom();
   }
-  const idx = Math.floor(Math.random() * filtered.length);
-  return ensureImage(filtered[idx]);
 }
